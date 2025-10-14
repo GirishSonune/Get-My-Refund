@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "506405305747",
+    "project_id": "get-my-refund-e9c86",
+    "storage_bucket": "get-my-refund-e9c86.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:506405305747:android:25a3af16f04036ff0f3c66",
+        "android_client_info": {
+          "package_name": "com.example.get_my_refund"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgzGfGIVUAAoKA8NVYC7cKaQbN9KTZWW4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
