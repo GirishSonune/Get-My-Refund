@@ -1,0 +1,11 @@
+{
+  "submitTitle": "SUBMIT YOUR COMPLAINT",
+  "enterName": "Name",
+  "enterPhone": "Phone",
+  "enterEmail": "Email",
+  "issueLabel": "Your issue with the company/brand",
+  "docsLabel": "Documents to support Complaint",
+  "attachments": "Attachments",
+  "agreeTerms": "I agree to the terms & conditions listed below",
+  "send": "SEND"
+}

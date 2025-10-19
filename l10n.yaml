@@ -1,0 +1,3 @@
+arb-dir: lib/l10n/ # <-- Change this to your desired directory
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
