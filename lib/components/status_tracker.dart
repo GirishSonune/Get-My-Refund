@@ -75,7 +75,7 @@ class ComplaintTracker extends StatefulWidget {
     this.headingDateTextStyle,
     this.subTitleTextStyle,
     this.subDateTextStyle,
-  }) : super(key: key);
+  });
 
   @override
   State<ComplaintTracker> createState() => _ComplaintTrackerState();

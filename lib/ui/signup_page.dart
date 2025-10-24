@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
+import '../main.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -10,15 +12,21 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _passCtrl = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _mobileController = TextEditingController();
   bool _loading = false;
   final _auth = AuthService();
+  final _userService = UserService();
+  String _selectedLocale = 'en';
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
+    _nameController.dispose();
+    _mobileController.dispose();
     super.dispose();
   }
 
@@ -26,16 +34,32 @@ class _SignUpPageState extends State<SignUpPage> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _loading = true);
     try {
-      await _auth.signUpWithEmail(
-        email: _emailCtrl.text,
+      final cred = await _auth.signUpWithEmail(
+        email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
+      final uid = cred.user?.uid;
+      if (uid != null) {
+        await _userService.setUserProfile(
+          uid,
+          name: _nameController.text.trim(),
+          email: _emailCtrl.text.trim(),
+          mobile: _mobileController.text.trim(),
+          locale: _selectedLocale,
+        );
+      }
       await _auth.sendEmailVerification();
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) {
+        // Apply locale immediately in the app
+        MyApp.setLocale(context, Locale(_selectedLocale));
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -53,11 +77,11 @@ class _SignUpPageState extends State<SignUpPage> {
             width: 360,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
+              color: const Color.fromRGBO(255, 255, 255, 0.95),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: const Color.fromRGBO(0, 0, 0, 0.08),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -88,6 +112,25 @@ class _SignUpPageState extends State<SignUpPage> {
                   child: Column(
                     children: [
                       TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Full name',
+                        ),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Please enter your name'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _mobileController,
+                        decoration: const InputDecoration(labelText: 'Mobile'),
+                        keyboardType: TextInputType.phone,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Please enter mobile number'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
@@ -107,11 +150,14 @@ class _SignUpPageState extends State<SignUpPage> {
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty)
+                          if (v == null || v.trim().isEmpty) {
                             return 'Email required';
+                          }
                           final email = v.trim();
                           final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                          if (!regex.hasMatch(email)) return 'Invalid email';
+                          if (!regex.hasMatch(email)) {
+                            return 'Invalid email';
+                          }
                           return null;
                         },
                       ),
@@ -136,13 +182,41 @@ class _SignUpPageState extends State<SignUpPage> {
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'Password required';
-                          if (v.length < 6) return 'Min 6 characters';
+                          }
+                          if (v.length < 6) {
+                            return 'Min 6 characters';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 18),
+                      // Language selection row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Language:'),
+                          const SizedBox(width: 12),
+                          DropdownButton<String>(
+                            value: _selectedLocale,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'en',
+                                child: Text('English'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'hi',
+                                child: Text('हिन्दी'),
+                              ),
+                            ],
+                            onChanged: (v) {
+                              if (v == null) return;
+                              setState(() => _selectedLocale = v);
+                            },
+                          ),
+                        ],
+                      ),
                       SizedBox(
                         width: double.infinity,
                         height: 56,

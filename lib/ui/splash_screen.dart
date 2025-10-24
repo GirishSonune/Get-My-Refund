@@ -49,8 +49,9 @@ class SplashScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(28),
                     ),
                   ),
-                  onPressed: () => Navigator.pushNamed(context, '/login'),
-                  child: const Text('Login'),
+                  onPressed: () =>
+                      Navigator.pushReplacementNamed(context, '/login'),
+                  child: const Text('Get Started'),
                 ),
               ),
             ],

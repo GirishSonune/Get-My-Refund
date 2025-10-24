@@ -12,6 +12,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  bool _obscure = true;
   bool _loading = false;
   final _auth = AuthService();
 
@@ -30,25 +31,87 @@ class _LoginPageState extends State<LoginPage> {
         email: _emailCtrl.text,
         password: _passCtrl.text,
       );
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _showResetDialog() async {
+    final email = _emailCtrl.text.trim();
+    final TextEditingController _dialogCtrl = TextEditingController(
+      text: email,
+    );
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset password'),
+        content: TextField(
+          controller: _dialogCtrl,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final mail = _dialogCtrl.text.trim();
+              if (mail.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter your email')),
+                );
+                return;
+              }
+              Navigator.pop(context);
+              setState(() => _loading = true);
+              try {
+                await AuthService().sendPasswordResetEmail(mail);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Password reset email sent')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              } finally {
+                if (mounted) setState(() => _loading = false);
+              }
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _googleSignIn() async {
     setState(() => _loading = true);
     try {
       await _auth.signInWithGoogle();
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -58,11 +121,15 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _loading = true);
     try {
       await _auth.signInWithFacebook();
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -80,11 +147,11 @@ class _LoginPageState extends State<LoginPage> {
             width: 360,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
+              color: const Color.fromRGBO(255, 255, 255, 0.95),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: const Color.fromRGBO(0, 0, 0, 0.08),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -137,18 +204,21 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty)
+                          if (v == null || v.trim().isEmpty) {
                             return 'Email required';
+                          }
                           final email = v.trim();
                           final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                          if (!regex.hasMatch(email)) return 'Invalid email';
+                          if (!regex.hasMatch(email)) {
+                            return 'Invalid email';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _passCtrl,
-                        obscureText: true,
+                        obscureText: _obscure,
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: const Padding(
@@ -158,6 +228,16 @@ class _LoginPageState extends State<LoginPage> {
                               color: Color(0xFFFF6B81),
                             ),
                           ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscure
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.grey[600],
+                            ),
+                            onPressed: () =>
+                                setState(() => _obscure = !_obscure),
+                          ),
                           filled: true,
                           fillColor: Colors.grey[100],
                           border: OutlineInputBorder(
@@ -166,12 +246,20 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'Password required';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 18),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: _loading ? null : _showResetDialog,
+                          child: const Text('Forgot password?'),
+                        ),
+                      ),
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -250,7 +338,7 @@ class _LoginPageState extends State<LoginPage> {
                       onTap: _facebookSignIn,
                       icon: Icons.facebook,
                       backgroundColor: const Color.fromARGB(255, 171, 204, 253),
-                      // iconColor: const  
+                      // iconColor: const
                       //   Color.fromRGBO(33, 150, 243, 1),
                       // ),
                     ),
@@ -271,7 +359,11 @@ class _LoginPageState extends State<LoginPage> {
                 Align(
                   alignment: Alignment.center,
                   child: IconButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/splash',
+                      (_) => false,
+                    ),
                     icon: const Icon(Icons.close),
                     color: Colors.grey[600],
                   ),
@@ -309,7 +401,10 @@ class _SocialCircle extends StatelessWidget {
           color: backgroundColor,
           shape: BoxShape.circle,
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+            BoxShadow(
+              color: const Color.fromRGBO(0, 0, 0, 0.04),
+              blurRadius: 8,
+            ),
           ],
         ),
         child: Center(child: Icon(icon, color: iconColor, size: 28)),

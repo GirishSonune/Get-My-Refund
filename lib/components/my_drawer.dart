@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/theme_provider.dart';
 import 'package:get_my_refund/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../main.dart';
 import 'package:get_my_refund/ui/about_us.dart';
-
 
 class MyDrawer extends StatelessWidget {
   const MyDrawer({super.key});
@@ -42,6 +42,7 @@ class MyDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return Drawer(
       backgroundColor: Theme.of(context).colorScheme.surface,
       child: Column(
@@ -50,38 +51,49 @@ class MyDrawer extends StatelessWidget {
           Column(
             children: [
               // drawer header logo
-              const SizedBox(height: 25),
+              const SizedBox(height: 8),
 
               DrawerHeader(
-                child: Container(
-                  // width: double.infinity,
-                  child: Column(
-                    children: [
-                      InkWell(
-                        onTap: () => Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/profile_page',
-                          (route) => false,
-                        ),
-                        child: const CircleAvatar(
-                          radius: 55,
-                          backgroundImage: AssetImage("avatar.png"),
-                        ),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/profile');
+                      },
+                      child: CircleAvatar(
+                        radius: 36,
+                        backgroundImage: const AssetImage('avatar.png'),
+                        child: user == null ? const Icon(Icons.person) : null,
                       ),
-                      // SizedBox(
-                      //   height: 12,
-                      // ),
-                      const Text(
-                        "Hello, Girish",
-                        style: TextStyle(fontWeight: FontWeight.w400),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.displayName ?? 'Hello',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user?.email ?? '',
+                            style: const TextStyle(color: Colors.grey),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      // Text("girish.sonune"),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 8),
 
               // Home (From new file)
               MyListTile(
@@ -146,12 +158,12 @@ class MyDrawer extends StatelessWidget {
               MyListTile(
                 text: "Sign Out",
                 icon: Icons.person_remove,
-                onTap: () {
-                  AuthService().signOut();
+                onTap: () async {
+                  await AuthService().signOutAll();
                   if (context.mounted) {
                     Navigator.pushNamedAndRemoveUntil(
                       context,
-                      '/',
+                      '/splash',
                       (_) => false,
                     );
                   }

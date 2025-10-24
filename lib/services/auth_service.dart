@@ -5,6 +5,9 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  /// Currently signed-in Firebase user, or null when not signed in.
+  User? get currentUser => _auth.currentUser;
+
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 
   Future<UserCredential> signInWithEmail({
@@ -39,6 +42,15 @@ class AuthService {
     final user = _auth.currentUser;
     if (user != null && !user.emailVerified) {
       await user.sendEmailVerification();
+    }
+  }
+
+  /// Send a password reset email to the given address.
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (e) {
+      throw _mapException(e);
     }
   }
 

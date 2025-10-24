@@ -7,10 +7,12 @@ import 'package:provider/provider.dart';
 
 import 'ui/complaint_page.dart';
 import 'ui/splash_screen.dart';
+import 'ui/auth_gate.dart';
 import 'ui/login_page.dart';
 import 'ui/signup_page.dart';
 import 'ui/home_page.dart';
 import 'ui/tracking_page.dart';
+import 'ui/user_profile.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,16 +20,22 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (context) => ThemeProvider())],
-      child: const MyApp(),
+      child: MyApp(key: MyApp._appKey),
     ),
   );
 }
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
+  static final GlobalKey<_MyAppState> _appKey = GlobalKey<_MyAppState>();
   static void setLocale(BuildContext context, Locale locale) {
     final state = context.findAncestorStateOfType<_MyAppState>();
     state?.updateLocale(locale);
+  }
+
+  /// Set locale using the global app key (doesn't require a BuildContext).
+  static void setLocaleGlobal(Locale locale) {
+    _appKey.currentState?.updateLocale(locale);
   }
 
   @override
@@ -47,17 +55,20 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B81)),
         useMaterial3: true,
       ),
-      // theme: Provider.of<ThemeProvider>(context).themeData,
 
+      // theme: Provider.of<ThemeProvider>(context).themeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
 
       locale: _locale,
-      initialRoute: '/',
+      // Use AuthGate as the home so the UI follows Firebase auth state
+      // across app restarts and resumes.
+      home: const AuthGate(),
       routes: {
-        '/': (_) => const SplashScreen(),
+        '/splash': (_) => const SplashScreen(),
         '/login': (_) => const LoginPage(),
         '/signup': (_) => const SignUpPage(),
+        '/profile': (_) => const UserProfilePage(),
         '/home': (_) => const HomePage(),
         '/complaint': (_) => const ComplaintPage(),
         '/tracking': (_) => const TrackingPage(),
