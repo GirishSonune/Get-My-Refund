@@ -193,7 +193,7 @@ class _LoginPageState extends State<LoginPage> {
                             padding: EdgeInsets.all(12.0),
                             child: Icon(
                               Icons.mail_outline,
-                              color: Color(0xFFFF6B81),
+                              color: Color(0xFF9CD6B8),
                             ),
                           ),
                           filled: true,
@@ -225,7 +225,7 @@ class _LoginPageState extends State<LoginPage> {
                             padding: EdgeInsets.all(12.0),
                             child: Icon(
                               Icons.lock_outline,
-                              color: Color(0xFFFF6B81),
+                              color: Color(0xFF9CD6B8),
                             ),
                           ),
                           suffixIcon: IconButton(
@@ -266,7 +266,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: FilledButton(
                           onPressed: _loading ? null : _login,
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF6B81),
+                            backgroundColor: Colors.green,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(28),
                             ),
@@ -324,7 +324,7 @@ class _LoginPageState extends State<LoginPage> {
                     _SocialCircle(
                       icon: Icons.g_mobiledata,
                       backgroundColor: const Color(0xFFFFEFF2),
-                      iconColor: const Color(0xFFFF6B81),
+                      iconColor: const Color(0xFF9CD6B8),
                       onTap: _googleSignIn,
                     ),
                   ],

@@ -5,7 +5,9 @@ import 'package:get_my_refund/l10n/app_localizations.dart';
 import 'package:get_my_refund/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
 
+import 'ui/about_us.dart';
 import 'ui/complaint_page.dart';
+import 'ui/contact_us.dart';
 import 'ui/splash_screen.dart';
 import 'ui/auth_gate.dart';
 import 'ui/login_page.dart';
@@ -52,17 +54,14 @@ class _MyAppState extends State<MyApp> {
       title: 'Get My Refund',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B81)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF9CD6B8)),
         useMaterial3: true,
       ),
 
       // theme: Provider.of<ThemeProvider>(context).themeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-
       locale: _locale,
-      // Use AuthGate as the home so the UI follows Firebase auth state
-      // across app restarts and resumes.
       home: const AuthGate(),
       routes: {
         '/splash': (_) => const SplashScreen(),
@@ -72,6 +71,8 @@ class _MyAppState extends State<MyApp> {
         '/home': (_) => const HomePage(),
         '/complaint': (_) => const ComplaintPage(),
         '/tracking': (_) => const TrackingPage(),
+        '/contact_us': (_) => const ContactUsPage(),
+        '/about_us': (_) => const AboutUs(),
       },
     );
   }

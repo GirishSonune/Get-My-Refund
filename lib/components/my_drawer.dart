@@ -40,6 +40,35 @@ class MyDrawer extends StatelessWidget {
     );
   }
 
+  String _getUserDisplayName(User? user) {
+    if (user == null) return 'Guest';
+
+    // First try to get the display name
+    if (user.displayName != null && user.displayName!.isNotEmpty) {
+      return user.displayName!;
+    }
+
+    // Then try to get name from email
+    if (user.email != null && user.email!.isNotEmpty) {
+      final emailName = user.email!.split('@')[0];
+      // Convert email name to Title Case (e.g., "john.doe" -> "John Doe")
+      return emailName
+          .split(RegExp(r'[._]'))
+          .map(
+            (word) => word[0].toUpperCase() + word.substring(1).toLowerCase(),
+          )
+          .join(' ');
+    }
+
+    // If we have a phone number, use that
+    if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty) {
+      return 'User ${user.phoneNumber!.substring(user.phoneNumber!.length - 4)}';
+    }
+
+    // Fallback
+    return 'User';
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -82,7 +111,7 @@ class MyDrawer extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            user?.email ?? '',
+                            _getUserDisplayName(user),
                             style: const TextStyle(color: Colors.grey),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -172,16 +201,38 @@ class MyDrawer extends StatelessWidget {
             ],
           ),
 
-          // Theme (From new file)
+          // Animated Theme Switcher
           Padding(
             padding: const EdgeInsets.only(bottom: 25.0),
-            child: MyListTile(
-              text: "Change Theme",
-              icon: Icons.dark_mode_outlined,
-              onTap: () => Provider.of<ThemeProvider>(
-                context,
-                listen: false,
-              ).toggleTheme(),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              transitionBuilder: (child, animation) =>
+                  ScaleTransition(scale: animation, child: child),
+              child: Consumer<ThemeProvider>(
+                key: ValueKey(Theme.of(context).brightness),
+                builder: (context, themeProvider, _) {
+                  final isDark =
+                      themeProvider.themeData.brightness == Brightness.dark;
+                  return ListTile(
+                    leading: Icon(
+                      isDark
+                          ? Icons.light_mode_outlined
+                          : Icons.dark_mode_outlined,
+                      color: Colors.grey,
+                    ),
+                    title: Text(
+                      isDark ? "Light Mode" : "Dark Mode",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 17,
+                      ),
+                    ),
+                    onTap: () {
+                      themeProvider.toggleTheme();
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],

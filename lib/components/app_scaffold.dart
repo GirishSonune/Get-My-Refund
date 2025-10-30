@@ -9,14 +9,16 @@ class AppScaffold extends StatelessWidget {
   final Widget body;
   final String title;
   final VoidCallback? onRaiseComplaint;
-  final Widget? drawer; // <-- 1. ADD THIS LINE
+  final Widget? drawer;
+  final int? currentIndex;
 
   const AppScaffold({
     super.key,
     required this.body,
     this.title = '',
     this.onRaiseComplaint,
-    this.drawer, // <-- 2. ADD THIS LINE
+    this.drawer,
+    this.currentIndex,
   });
 
   @override
@@ -68,14 +70,114 @@ class AppScaffold extends StatelessWidget {
           ),
         ],
       ),
-      drawer: drawer, // <-- 3. ADD THIS LINE
+      drawer: drawer,
       body: body,
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed:
             onRaiseComplaint ??
             () => Navigator.pushNamed(context, '/complaint'),
-        label: const Text('Raise a New Complaint'),
-        icon: const Icon(Icons.add),
+        child: const Icon(Icons.add),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        notchMargin: 6,
+        shape: const CircularNotchedRectangle(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _NavBarItem(
+              icon: Icons.home,
+              label: 'Home',
+              isSelected: currentIndex == 0,
+              onTap: () {
+                if (currentIndex != 0) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                    (route) => false,
+                  );
+                }
+              },
+            ),
+            _NavBarItem(
+              icon: Icons.track_changes,
+              label: 'Track',
+              isSelected: currentIndex == 1,
+              onTap: () {
+                if (currentIndex != 1) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/tracking',
+                    (route) => false,
+                  );
+                }
+              },
+            ),
+            const SizedBox(width: 32), // Space for FAB
+            _NavBarItem(
+              icon: Icons.person,
+              label: 'Profile',
+              isSelected: currentIndex == 2,
+              onTap: () {
+                if (currentIndex != 2) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/profile',
+                    (route) => false,
+                  );
+                }
+              },
+            ),
+            _NavBarItem(
+              icon: Icons.info_outline,
+              label: 'About',
+              isSelected: currentIndex == 3,
+              onTap: () {
+                if (currentIndex != 3) {
+                  Navigator.pushNamed(context, '/about_us');
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavBarItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool isSelected;
+
+  const _NavBarItem({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.isSelected = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = isSelected ? theme.colorScheme.primary : Colors.grey;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(color: color, fontSize: 12)),
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
       ),
     );
   }

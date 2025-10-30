@@ -139,7 +139,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             padding: EdgeInsets.all(12.0),
                             child: Icon(
                               Icons.mail_outline,
-                              color: Color(0xFFFF6B81),
+                              color: Color(0xFF9CD6B8),
                             ),
                           ),
                           filled: true,
@@ -171,7 +171,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             padding: EdgeInsets.all(12.0),
                             child: Icon(
                               Icons.lock_outline,
-                              color: Color(0xFFFF6B81),
+                              color: Color(0xFF9CD6B8),
                             ),
                           ),
                           filled: true,
@@ -223,7 +223,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         child: FilledButton(
                           onPressed: _loading ? null : _signUp,
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF6B81),
+                            backgroundColor: Colors.green,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(28),
                             ),
