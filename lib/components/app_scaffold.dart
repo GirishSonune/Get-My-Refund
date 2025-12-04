@@ -27,24 +27,6 @@ class AppScaffold extends StatelessWidget {
       appBar: AppBar(
         title: Text(title.isEmpty ? 'Get My Refund' : title),
         actions: [
-          // Locale toggle (quick)
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              // Apply immediately on the next frame to avoid using the
-              // incoming BuildContext across asynchronous callbacks.
-              MyApp.setLocaleGlobal(Locale(v));
-              // If user is signed in, persist preference to Firestore (fire-and-forget)
-              final user = AuthService().currentUser;
-              if (user != null) {
-                UserService().setLocaleForUser(user.uid, v).catchError((_) {});
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'en', child: Text('English')),
-              PopupMenuItem(value: 'hi', child: Text('हिन्दी')),
-            ],
-            icon: const Icon(Icons.language),
-          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.account_circle),
             itemBuilder: (_) => [

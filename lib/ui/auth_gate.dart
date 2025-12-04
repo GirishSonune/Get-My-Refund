@@ -30,23 +30,6 @@ class AuthGate extends StatelessWidget {
         final user = snapshot.data;
         if (user == null) return const SplashScreen();
 
-        // Try to load user's saved locale and apply it. This is best-effort
-        // and does not block showing the HomePage. Capture the uid and
-        // schedule locale application on the microtask queue so we don't use
-        // the incoming BuildContext inside an async callback.
-        final uid = user.uid;
-        _userService
-            .getLocaleForUser(uid)
-            .then((locale) {
-              if (locale != null && locale.isNotEmpty) {
-                // schedule on microtask to ensure context is still valid
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  MyApp.setLocale(context, Locale(locale));
-                });
-              }
-            })
-            .catchError((_) {});
-
         return const HomePage();
       },
     );

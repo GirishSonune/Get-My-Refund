@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/user_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 import '../main.dart';
 import '../components/app_scaffold.dart';
@@ -12,7 +12,6 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
-  final _userService = UserService();
   final _auth = AuthService();
   final _formKey = GlobalKey<FormState>();
 
@@ -51,14 +50,36 @@ class _UserProfilePageState extends State<UserProfilePage> {
       }
       return;
     }
-    final p = await _userService.getUserProfile(uid);
-    if (p != null) {
-      _nameCtrl.text = (p['name'] ?? '') as String;
-      _mobileCtrl.text = (p['mobile'] ?? '') as String;
-      _emailCtrl.text = (p['email'] ?? '') as String;
-      _selectedLocale = (p['locale'] ?? 'en') as String;
+
+    try {
+      // Get detailed user information
+      final detailsDoc = await FirebaseFirestore.instance
+          .collection('user_details')
+          .doc(uid)
+          .get();
+
+      if (detailsDoc.exists) {
+        final data = detailsDoc.data();
+        if (data != null) {
+          setState(() {
+            _nameCtrl.text = data['name'] ?? '';
+            _mobileCtrl.text = data['phone'] ?? '';
+            _emailCtrl.text = data['email'] ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading profile: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _saveProfile() async {
@@ -71,14 +92,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
     if (uid == null) return;
 
     try {
-      await _userService.setUserProfile(
-        uid,
-        name: _nameCtrl.text.trim(),
-        email: _emailCtrl.text.trim(),
-        mobile: _mobileCtrl.text.trim(),
-        locale: _selectedLocale,
-      );
-      await _userService.setLocaleForUser(uid, _selectedLocale);
+      // Update both collections in parallel for consistency
+      await Future.wait([
+        // Update main user profile
+        FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'name': _nameCtrl.text.trim(),
+          'email': _emailCtrl.text.trim(),
+          'phone': _mobileCtrl.text.trim(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }),
+
+        // Update detailed user information
+        FirebaseFirestore.instance.collection('user_details').doc(uid).update({
+          'name': _nameCtrl.text.trim(),
+          'phone': _mobileCtrl.text.trim(),
+          'email': _emailCtrl.text.trim(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }),
+      ]);
 
       if (mounted) {
         MyApp.setLocaleGlobal(Locale(_selectedLocale));

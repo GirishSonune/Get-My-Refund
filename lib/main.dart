@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'ui/about_us.dart';
 import 'ui/complaint_page.dart';
 import 'ui/contact_us.dart';
+import 'ui/detailes_page.dart';
 import 'ui/splash_screen.dart';
 import 'ui/auth_gate.dart';
 import 'ui/login_page.dart';
@@ -46,7 +47,34 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Locale _locale = const Locale('en');
-  void updateLocale(Locale locale) => setState(() => _locale = locale);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLocale();
+  }
+
+  Future<void> _loadSavedLocale() async {
+    try {
+      final systemLocale = WidgetsBinding.instance.window.locale;
+      final supportedLocales = [const Locale('en'), const Locale('hi')];
+
+      setState(() {
+        _locale = supportedLocales.contains(systemLocale)
+            ? systemLocale
+            : const Locale('en');
+      });
+    } catch (e) {
+      setState(() => _locale = const Locale('en'));
+    }
+  }
+
+  void updateLocale(Locale locale) {
+    if (locale.languageCode != _locale.languageCode) {
+      setState(() => _locale = locale);
+      Navigator.pop(context); // Close drawer after language change
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +101,7 @@ class _MyAppState extends State<MyApp> {
         '/tracking': (_) => const TrackingPage(),
         '/contact_us': (_) => const ContactUsPage(),
         '/about_us': (_) => const AboutUs(),
+        '/details': (_) => const DetailsPage(),
       },
     );
   }

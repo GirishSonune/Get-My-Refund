@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as path;
+import 'dart:io';
 
 class ComplaintPage extends StatefulWidget {
   const ComplaintPage({super.key});
@@ -38,7 +41,6 @@ class _ComplaintPageState extends State<ComplaintPage> {
     );
     if (res != null && res.files.isNotEmpty) {
       setState(() {
-        // Avoid duplicates by name + size
         final existing = _files.map((f) => '${f.name}-${f.size}').toSet();
         for (final f in res.files) {
           final key = '${f.name}-${f.size}';
@@ -54,36 +56,396 @@ class _ComplaintPageState extends State<ComplaintPage> {
 
   Future<void> _submit() async {
     final ok = _formKey.currentState?.validate() ?? false;
-    if (!ok || !_agree) return;
-    setState(() => _submitting = true);
-    try {
-      // TODO: send to backend / Firestore; attach _files paths for upload
-      final name = _nameCtrl.text;
-      final phone = _phoneCtrl.text;
-      final issue = _issueCtrl.text;
+    if (!ok || !_agree) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all fields and agree to terms'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
-      final emailUri = Uri(
-        scheme: 'mailto',
-        path: 'girish.sonune@gmail.com',
-        query:
-            'subject=New Complaint from $name&body=Name: $name\nPhone: $phone\n\nIssue: $issue',
+    setState(() => _submitting = true);
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final storage = FirebaseStorage.instance;
+
+      // Upload files first
+      final uploadedFiles = await Future.wait(
+        _files.map((file) async {
+          if (file.path == null) return null;
+          final fileName = path.basename(file.path!);
+          final ref = storage.ref().child(
+            'complaints/${DateTime.now().millisecondsSinceEpoch}_$fileName',
+          );
+          await ref.putFile(File(file.path!));
+          final url = await ref.getDownloadURL();
+          return {'name': fileName, 'url': url, 'size': file.size};
+        }).whereType<Future<Map<String, dynamic>?>>(),
       );
 
-      await launchUrl(emailUri);
+      // Create complaint document
+      final complaintRef = firestore.collection('complaints').doc();
+      await complaintRef.set({
+        'name': _nameCtrl.text.trim(),
+        'phone': _phoneCtrl.text.trim(),
+        'email': _emailCtrl.text.trim(),
+        'issue': _issueCtrl.text.trim(),
+        'attachments': uploadedFiles.whereType<Map<String, dynamic>>().toList(),
+        'status': 'new',
+        'createdAt': FieldValue.serverTimestamp(),
+        'recipientEmail': 'girish.sonune@gmail.com',
+        'needsEmailNotification':
+            true, // This flag will trigger the Cloud Function
+      });
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Complaint submitted')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Complaint submitted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Future<void> _showTermsAndConditions() async {
+    await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).primaryColor,
+                    Theme.of(context).primaryColor.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.article, color: Colors.white),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Terms & Conditions',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Fee Notice Box
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange, width: 2),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info, color: Colors.orange[800]),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'आपको आपके पैसे मिलने के बाद आप GetMyRefund को १०% राशि का भुगतान करने के लिए सहमत हैं',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange[900],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'You agree to pay 10% of the refunded amount after you get your money back in your original mode of payment',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange[900],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Welcome Text
+                    const Text(
+                      'Welcome to GetMyRefund, India\'s first online platform which helps you get back what is legally yours.',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Terms List
+                    _buildTermItem(
+                      '1',
+                      'As per our conversation, please send us the details of your transaction, booking details, invoices, complaint date and one original photo id address proof of the account holder.',
+                    ),
+                    _buildTermItem(
+                      '2',
+                      'Please note that we have assured to help you get your money back as a refund in your own original mode of payment within a maximum of 90 working days. You will not be charged anything till you get your refund back. You have agreed to pay us a Success fee of 10% of the refunded amount, only AFTER you have received your refund in your original mode of payment.',
+                    ),
+                    _buildTermItem(
+                      '3',
+                      'We do not have any other hidden charges or taxes, flat 10% of the refunded amount is all you have to pay as our charges. We will always chase for a full refund but our charges of flat 10% will be applicable on any refunded amount.',
+                    ),
+                    _buildTermItem(
+                      '4',
+                      'Sending your details to us will be considered as an acknowledgement of acceptance of all our terms and conditions.',
+                    ),
+                    _buildTermItem(
+                      '5',
+                      'We will provide all support and assistance needed including filing complaints on government portals, sending legal notices if needed etc. All this will be done only with your authorization and approval. You will be kept informed about progress at each stage.',
+                    ),
+                    _buildTermItem(
+                      '6',
+                      'You agree to pay our charges of flat 10% of the refunded amount as soon as you get your money back in your original mode of payment, irrespective of the amount of legal work done. No hidden or extra charges applicable.',
+                    ),
+                    _buildTermItem(
+                      '7',
+                      'As soon as you get a refund, you have to pay us flat 10% of that refunded amount as our fee, irrespective of how much refund is still pending.',
+                    ),
+                    _buildTermItem(
+                      '8',
+                      'After you accept these terms, our charges of flat 10% are applicable on all future refunds for this particular case. You will not have to pay any fee on amounts already refunded before you send us documents.',
+                    ),
+                    _buildTermItem(
+                      '9',
+                      'Once you accept our terms or send us your documents, our charges will be applicable from that moment. Make sure you read all terms properly before accepting.',
+                    ),
+                    _buildTermItem(
+                      '10',
+                      'Failure to pay our charges as soon as you get your money back can lead to initiation of legal proceedings against you for non-payment of our dues.',
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Disclaimer Box
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue[200]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Important Notice',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.blue[900],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'GetMyRefund.in provides general consumer guidance and does not act as a law firm. We operate as an independent platform and are not affiliated with any brand, company, government body, or forum.',
+                            style: TextStyle(
+                              color: Colors.blue[900],
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // How We Help Section
+                    const Text(
+                      'How We Help Consumers',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'We follow a structured four-step process:',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildProcessStep(
+                      '1',
+                      'Direct Company Intervention',
+                      'We reach out to the company on your behalf.',
+                    ),
+                    _buildProcessStep(
+                      '2',
+                      'Government Portals',
+                      'Guide you to file complaints on official portals.',
+                    ),
+                    _buildProcessStep(
+                      '3',
+                      'Company Escalation',
+                      'Connect with experts to escalate to top management.',
+                    ),
+                    _buildProcessStep(
+                      '4',
+                      'Consumer Forum',
+                      'Guide on escalating to appropriate consumer forum.',
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Accept Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          setState(() => _agree = true);
+                        },
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('I Accept Terms & Conditions'),
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTermItem(String number, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[800],
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProcessStep(String number, String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   InputDecoration _dec(String label) => InputDecoration(
@@ -108,8 +470,6 @@ class _ComplaintPageState extends State<ComplaintPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canSend =
-        (_formKey.currentState?.validate() ?? false) && _agree && !_submitting;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Submit your complaint')),
@@ -221,21 +581,49 @@ class _ComplaintPageState extends State<ComplaintPage> {
                 ],
                 const SizedBox(height: 12),
 
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: _agree,
-                  onChanged: (v) => setState(() => _agree = v ?? false),
-                  title: const Text(
-                    'I agree to the terms & conditions listed below',
+                // Terms & Conditions Section
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _agree ? Colors.blue : Colors.grey[300]!,
+                      width: 1.5,
+                    ),
                   ),
-                  controlAffinity: ListTileControlAffinity.leading,
+                  child: Column(
+                    children: [
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: _agree,
+                        onChanged: (v) => setState(() => _agree = v ?? false),
+                        title: const Text(
+                          'I agree to the terms & conditions',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      TextButton.icon(
+                        onPressed: _showTermsAndConditions,
+                        icon: const Icon(Icons.article_outlined, size: 20),
+                        label: const Text('Read Full Terms & Conditions'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 SizedBox(
                   height: 48,
                   child: FilledButton(
-                    onPressed: canSend ? _submit : null,
+                    onPressed: _submitting ? null : _submit,
                     child: _submitting
                         ? const SizedBox(
                             width: 18,

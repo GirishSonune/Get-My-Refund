@@ -10,30 +10,57 @@ class MyDrawer extends StatelessWidget {
   const MyDrawer({super.key});
 
   void _showLanguageSheet(BuildContext context) {
+    final currentLocale = Localizations.localeOf(context).languageCode;
+
     showModalBottomSheet(
       context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'Select Language / भाषा चुनें',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            const Divider(),
             ListTile(
               leading: const Icon(Icons.language),
               title: const Text('English'),
+              subtitle: const Text('English'),
+              trailing: currentLocale == 'en'
+                  ? Icon(
+                      Icons.check_circle,
+                      color: Theme.of(context).primaryColor,
+                    )
+                  : null,
               onTap: () {
                 MyApp.setLocale(context, const Locale('en'));
                 Navigator.pop(context); // close sheet
-                Navigator.pop(context); // close drawer
               },
             ),
             ListTile(
               leading: const Icon(Icons.language),
               title: const Text('हिन्दी'),
+              subtitle: const Text('Hindi'),
+              trailing: currentLocale == 'hi'
+                  ? Icon(
+                      Icons.check_circle,
+                      color: Theme.of(context).primaryColor,
+                    )
+                  : null,
               onTap: () {
                 MyApp.setLocale(context, const Locale('hi'));
                 Navigator.pop(context); // close sheet
-                Navigator.pop(context); // close drawer
               },
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -128,7 +155,11 @@ class MyDrawer extends StatelessWidget {
               MyListTile(
                 text: "Home",
                 icon: Icons.home,
-                onTap: () => Navigator.pop(context),
+                // onTap: () => Navigator.pop(context),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/details');
+                },
               ),
 
               // Track Status (From old file)

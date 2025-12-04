@@ -55,6 +55,10 @@ dependencies:
   ionicons: ^0.2.2
   provider: ^6.0.5
   url_launcher: ^6.2.1
+  shared_preferences:
+  flutter_email_sender: ^8.0.0
+  firebase_storage: ^13.0.3
+  mailer: ^6.6.0
 
 dev_dependencies:
   flutter_test:

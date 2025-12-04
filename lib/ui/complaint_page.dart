@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server.dart';
+import 'dart:io';
 
 class ComplaintPage extends StatefulWidget {
   const ComplaintPage({super.key});
@@ -63,8 +66,46 @@ class _ComplaintPageState extends State<ComplaintPage> {
     }
     setState(() => _submitting = true);
     try {
-      // TODO: send to backend / Firestore; attach _files paths for upload
-      await Future<void>.delayed(const Duration(milliseconds: 800));
+      // SMTP server configuration
+      final smtpServer = gmail(
+        'girish.sonune@gmail.com', // Replace with your Gmail address
+        'rucg flzd qemn fzqy', // Replace with your Gmail App Password
+      );
+
+      // Prepare email content
+      final emailContent =
+          '''
+Name: ${_nameCtrl.text.trim()}
+Phone: ${_phoneCtrl.text.trim()}
+Email: ${_emailCtrl.text.trim()}
+
+Issue Details:
+${_issueCtrl.text.trim()}
+
+Attachments: ${_files.map((f) => f.name).join(', ')}
+''';
+
+      // Create email message
+      final message = Message()
+        ..from = Address('girish.sonune@gmail.com', 'GetMyRefund Support')
+        ..recipients = ['girish.sonune@gmail.com']
+        ..subject = 'New Complaint Submission - GetMyRefund'
+        ..text = emailContent;
+
+      // Add attachments
+      for (final file in _files) {
+        if (file.path != null) {
+          message.attachments.add(
+            FileAttachment(File(file.path!))
+              ..fileName = file.name
+              ..contentType = 'application/octet-stream',
+          );
+        }
+      }
+
+      // Send email
+      await send(message, smtpServer);
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

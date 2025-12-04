@@ -14,19 +14,14 @@ class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passCtrl = TextEditingController();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _mobileController = TextEditingController();
   bool _loading = false;
   final _auth = AuthService();
   final _userService = UserService();
-  String _selectedLocale = 'en';
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
-    _nameController.dispose();
-    _mobileController.dispose();
     super.dispose();
   }
 
@@ -40,25 +35,24 @@ class _SignUpPageState extends State<SignUpPage> {
       );
       final uid = cred.user?.uid;
       if (uid != null) {
-        await _userService.setUserProfile(
-          uid,
-          name: _nameController.text.trim(),
-          email: _emailCtrl.text.trim(),
-          mobile: _mobileController.text.trim(),
-          locale: _selectedLocale,
-        );
-      }
-      await _auth.sendEmailVerification();
-      if (mounted) {
-        // Apply locale immediately in the app
-        MyApp.setLocale(context, Locale(_selectedLocale));
-        Navigator.pushReplacementNamed(context, '/home');
+        // Create basic user profile with email only
+        await _userService.setUserProfile(uid, email: _emailCtrl.text.trim());
+
+        // Send email verification
+        await _auth.sendEmailVerification();
+
+        if (mounted) {
+          // Navigate to details page to collect additional information
+          await Navigator.pushReplacementNamed(context, '/details');
+        }
+      } else {
+        throw Exception('Failed to create account');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -101,35 +95,17 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Join to start learning by building real apps.',
+                  'Join to start managing your complaints.',
+                  textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[700],
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 24),
                 Form(
                   key: _formKey,
                   child: Column(
                     children: [
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Full name',
-                        ),
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Please enter your name'
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _mobileController,
-                        decoration: const InputDecoration(labelText: 'Mobile'),
-                        keyboardType: TextInputType.phone,
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Please enter mobile number'
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
@@ -161,7 +137,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _passCtrl,
                         obscureText: true,
@@ -191,32 +167,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 18),
-                      // Language selection row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('Language:'),
-                          const SizedBox(width: 12),
-                          DropdownButton<String>(
-                            value: _selectedLocale,
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'en',
-                                child: Text('English'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'hi',
-                                child: Text('हिन्दी'),
-                              ),
-                            ],
-                            onChanged: (v) {
-                              if (v == null) return;
-                              setState(() => _selectedLocale = v);
-                            },
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -228,23 +179,37 @@ class _SignUpPageState extends State<SignUpPage> {
                               borderRadius: BorderRadius.circular(28),
                             ),
                           ),
-                          child: Text(
-                            _loading ? 'Creating...' : 'Create Account',
-                            style: const TextStyle(fontSize: 16),
-                          ),
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Create Account',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.center,
-                  child: IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                    color: Colors.grey[600],
-                  ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Already have an account?',
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Sign In'),
+                    ),
+                  ],
                 ),
               ],
             ),
