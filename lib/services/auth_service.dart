@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -81,7 +83,12 @@ class AuthService {
   /// Sign in with Google
   Future<UserCredential> signInWithGoogle() async {
     try {
-      final googleSignIn = GoogleSignIn(scopes: ['email']);
+      final googleSignIn = GoogleSignIn(
+        scopes: ['email'],
+        clientId: kIsWeb
+            ? '512066556824-82u562i3v2fbeohlr44hk0bsjqovs500.apps.googleusercontent.com'
+            : null,
+      );
       final account = await googleSignIn.signIn();
       if (account == null) throw Exception('Google sign in aborted');
       final auth = await account.authentication;
@@ -105,6 +112,63 @@ class AuthService {
       final accessToken = result.accessToken?.token;
       if (accessToken == null) throw Exception('Missing Facebook access token');
       final credential = FacebookAuthProvider.credential(accessToken);
+      return await _auth.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw _mapException(e);
+    }
+  }
+
+  /// Sign in with Apple
+  Future<UserCredential> signInWithApple() async {
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        // Needed for Android/Web:
+        webAuthenticationOptions: (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
+            ? WebAuthenticationOptions(
+                clientId: 'com.example.getMyRefund.service', // Update with your Service ID
+                redirectUri: Uri.parse(
+                  'https://get-my-refund-5096f.firebaseapp.com/__/auth/handler',
+                ),
+              )
+            : null,
+      );
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      return await _auth.signInWithCredential(oauthCredential);
+    } on FirebaseAuthException catch (e) {
+      throw _mapException(e);
+    }
+  }
+
+  /// Verify phone number
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required void Function(PhoneAuthCredential) verificationCompleted,
+    required void Function(FirebaseAuthException) verificationFailed,
+    required void Function(String, int?) codeSent,
+    required void Function(String) codeAutoRetrievalTimeout,
+  }) async {
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      verificationCompleted: verificationCompleted,
+      verificationFailed: verificationFailed,
+      codeSent: codeSent,
+      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
+      timeout: const Duration(seconds: 60),
+    );
+  }
+
+  /// Sign in with Credential (generic, used for Phone too)
+  Future<UserCredential> signInWithCredential(AuthCredential credential) async {
+    try {
       return await _auth.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       throw _mapException(e);

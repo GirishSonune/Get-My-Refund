@@ -92,7 +92,7 @@ class _DetailsPageState extends State<DetailsPage> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -211,7 +211,7 @@ class _DetailsPageState extends State<DetailsPage> {
                       gradient: LinearGradient(
                         colors: [
                           Theme.of(context).primaryColor,
-                          Theme.of(context).primaryColor.withOpacity(0.7),
+                          Theme.of(context).primaryColor.withValues(alpha: 0.7),
                         ],
                       ),
                       shape: BoxShape.circle,
@@ -383,7 +383,7 @@ class _DetailsPageState extends State<DetailsPage> {
                     onPressed: _loading
                         ? null
                         : () =>
-                              Navigator.pushReplacementNamed(context, '/home'),
+                              Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),
                     child: Text(
                       'Skip for now',
                       style: TextStyle(color: Colors.grey[600], fontSize: 14),

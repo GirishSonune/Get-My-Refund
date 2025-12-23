@@ -1,4 +1,4 @@
-library complaint_tracker;
+
 
 import 'package:flutter/material.dart';
 
@@ -22,8 +22,6 @@ class TextDto {
 }
 
 class ComplaintTracker extends StatefulWidget {
-  ///This variable is used to set status of order, this get only enum which is already in a package below example present.
-  /// Status.order
   final ComplaintStatus? status;
 
   /// This variable is used to get list of order sub title and date to show present status of product.
@@ -61,7 +59,7 @@ class ComplaintTracker extends StatefulWidget {
   final TextStyle? subDateTextStyle;
 
   const ComplaintTracker({
-    Key? key,
+    super.key,
     required this.status,
     this.complaintRegister,
     this.formalComplaintFile,

@@ -61,12 +61,12 @@ class HomePage extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [color.withOpacity(0.8), color],
+          colors: [color.withValues(alpha: 0.8), color],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -83,7 +83,7 @@ class HomePage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(icon, color: Colors.white, size: 24),
@@ -141,7 +141,7 @@ class HomePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -177,10 +177,10 @@ class HomePage extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: statusColor.withOpacity(0.3),
+                          color: statusColor.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -222,7 +222,7 @@ class HomePage extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -345,7 +345,7 @@ class HomePage extends StatelessWidget {
 
     // Extract first name from email
     final userName = user.email?.split('@')[0] ?? 'User';
-    final displayName = userName[0].toUpperCase() + userName.substring(1);
+    // final displayName = userName[0].toUpperCase() + userName.substring(1);
 
     return AppScaffold(
       title: 'Dashboard',
@@ -359,13 +359,13 @@ class HomePage extends StatelessWidget {
           final activeCases = docs.length;
 
           // Fixed: Properly extract data from Firestore documents
-          final totalClaims = docs.fold<int>(0, (sum, doc) {
+          final totalClaims = docs.fold<int>(0, (prev, doc) {
             final data = doc.data() as Map<String, dynamic>?;
             final amount = data?['amount'];
-            if (amount is int) return sum + amount;
-            if (amount is double) return sum + amount.toInt();
-            if (amount is String) return sum + (int.tryParse(amount) ?? 0);
-            return sum;
+            if (amount is int) return prev + amount;
+            if (amount is double) return prev + amount.toInt();
+            if (amount is String) return prev + (int.tryParse(amount) ?? 0);
+            return prev;
           });
 
           return RefreshIndicator(
@@ -384,7 +384,7 @@ class HomePage extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Theme.of(context).primaryColor.withOpacity(0.8),
+                          Theme.of(context).primaryColor.withValues(alpha: 0.8),
                           Theme.of(context).primaryColor,
                         ],
                       ),
@@ -399,7 +399,7 @@ class HomePage extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
@@ -435,7 +435,7 @@ class HomePage extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: IconButton(

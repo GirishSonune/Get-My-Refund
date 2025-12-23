@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'ui/about_us.dart';
 import 'ui/complaint_page.dart';
 import 'ui/contact_us.dart';
-import 'ui/detailes_page.dart';
+import 'ui/details_page.dart';
 import 'ui/splash_screen.dart';
 import 'ui/auth_gate.dart';
 import 'ui/login_page.dart';
@@ -31,6 +31,7 @@ Future<void> main() async {
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
   static final GlobalKey<_MyAppState> _appKey = GlobalKey<_MyAppState>();
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   static void setLocale(BuildContext context, Locale locale) {
     final state = context.findAncestorStateOfType<_MyAppState>();
     state?.updateLocale(locale);
@@ -56,7 +57,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _loadSavedLocale() async {
     try {
-      final systemLocale = WidgetsBinding.instance.window.locale;
+      final systemLocale = View.of(context).platformDispatcher.locale;
       final supportedLocales = [const Locale('en'), const Locale('hi')];
 
       setState(() {
@@ -79,6 +80,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: MyApp.navigatorKey,
       title: 'Get My Refund',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

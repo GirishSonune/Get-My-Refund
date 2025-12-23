@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
-import '../services/user_service.dart';
 import '../main.dart';
+
+import '../services/user_service.dart';
+import '../components/social_circle.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -14,6 +17,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passCtrl = TextEditingController();
+  bool _obscure = true;
   bool _loading = false;
   final _auth = AuthService();
   final _userService = UserService();
@@ -42,9 +46,12 @@ class _SignUpPageState extends State<SignUpPage> {
         await _auth.sendEmailVerification();
 
         if (mounted) {
-          // Navigate to details page to collect additional information
-          await Navigator.pushReplacementNamed(context, '/details');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account created! Redirecting...')),
+          );
         }
+
+        await MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (route) => false);
       } else {
         throw Exception('Failed to create account');
       }
@@ -56,6 +63,153 @@ class _SignUpPageState extends State<SignUpPage> {
       }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _phoneSignUp() async {
+    final phoneController = TextEditingController();
+    final otpController = TextEditingController();
+    String? verificationId;
+
+    final phone = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Phone Sign Up'),
+        content: TextField(
+          controller: phoneController,
+          decoration: const InputDecoration(
+            labelText: 'Phone Number (e.g., +91...)',
+            prefixIcon: Icon(Icons.phone),
+          ),
+          keyboardType: TextInputType.phone,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              var text = phoneController.text.trim();
+              if (text.isNotEmpty) {
+                if (!text.startsWith('+')) {
+                  if (RegExp(r'^[0-9]{10}$').hasMatch(text)) {
+                    text = '+91$text';
+                  } else {
+                    if (!text.startsWith('+')) text = '+$text';
+                  }
+                }
+                Navigator.pop(context, text);
+              }
+            },
+            child: const Text('Send Code'),
+          ),
+        ],
+      ),
+    );
+
+    if (phone == null || phone.isEmpty) return;
+
+    setState(() => _loading = true);
+
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phone,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          await _auth.signInWithCredential(credential);
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          }
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          if (mounted) {
+            setState(() => _loading = false);
+            String message = 'Verification Failed: ${e.message}';
+            if (e.code == 'billing-not-enabled') {
+              message = 'Error: Firebase Blaze Plan required for SMS.\n'
+                  'Please add this number as a "Test Number" in Firebase Console.';
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message),
+                duration: const Duration(seconds: 7),
+              ),
+            );
+          }
+        },
+        codeSent: (String verId, int? resendToken) async {
+          verificationId = verId;
+          setState(() => _loading = false);
+
+          if (!mounted) return;
+          final otp = await showDialog<String>(
+            barrierDismissible: false,
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Enter OTP'),
+              content: TextField(
+                controller: otpController,
+                decoration: const InputDecoration(
+                  labelText: '6-digit Code',
+                  prefixIcon: Icon(Icons.password),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final text = otpController.text.trim();
+                    if (text.isNotEmpty) {
+                      Navigator.pop(context, text);
+                    }
+                  },
+                  child: const Text('Verify'),
+                ),
+              ],
+            ),
+          );
+
+          if (otp == null || otp.isEmpty) return;
+
+          setState(() => _loading = true);
+          try {
+            final credential = PhoneAuthProvider.credential(
+              verificationId: verificationId!,
+              smsCode: otp,
+            );
+            await _auth.signInWithCredential(credential);
+            if (mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Invalid OTP: $e')),
+              );
+            }
+          } finally {
+            if (mounted) setState(() => _loading = false);
+          }
+        },
+        codeAutoRetrievalTimeout: (String verId) {
+          verificationId = verId;
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+      setState(() => _loading = false);
     }
   }
 
@@ -140,7 +294,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passCtrl,
-                        obscureText: true,
+                        obscureText: _obscure,
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: const Padding(
@@ -149,6 +303,13 @@ class _SignUpPageState extends State<SignUpPage> {
                               Icons.lock_outline,
                               color: Color(0xFF9CD6B8),
                             ),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscure ? Icons.visibility : Icons.visibility_off,
+                              color: Colors.grey[600],
+                            ),
+                            onPressed: () => setState(() => _obscure = !_obscure),
                           ),
                           filled: true,
                           fillColor: Colors.grey[100],
@@ -208,6 +369,73 @@ class _SignUpPageState extends State<SignUpPage> {
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Sign In'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: const [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('OR'),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Sign up with Apple, Google or Phone',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SocialCircle(
+                      icon: Icons.apple,
+                      backgroundColor: Colors.black,
+                      iconColor: Colors.white,
+                      onTap: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Apple sign-in not wired'),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 24),
+                    SocialCircle(
+                      icon: Icons.g_mobiledata,
+                      backgroundColor: const Color(0xFFFFEFF2),
+                      iconColor: const Color(0xFF9CD6B8),
+                      onTap: () async {
+                        setState(() => _loading = true);
+                        try {
+                          await _auth.signInWithGoogle();
+                          if (mounted) {
+                            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString())),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() => _loading = false);
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 24),
+                    SocialCircle(
+                      icon: Icons.phone,
+                      backgroundColor: const Color(0xFFE3F2FD),
+                      iconColor: Colors.blue,
+                      onTap: _phoneSignUp,
                     ),
                   ],
                 ),

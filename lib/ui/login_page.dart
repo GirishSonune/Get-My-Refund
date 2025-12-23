@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../components/social_circle.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,6 +13,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
+  final dialogCtrl = TextEditingController(); // Renamed from _dialogCtrl
   final _passCtrl = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
@@ -19,6 +22,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void dispose() {
     _emailCtrl.dispose();
+    dialogCtrl.dispose(); // Dispose the new dialogCtrl
     _passCtrl.dispose();
     super.dispose();
   }
@@ -32,7 +36,7 @@ class _LoginPageState extends State<LoginPage> {
         password: _passCtrl.text,
       );
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -47,15 +51,13 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _showResetDialog() async {
     final email = _emailCtrl.text.trim();
-    final TextEditingController _dialogCtrl = TextEditingController(
-      text: email,
-    );
+    dialogCtrl.text = email; // Set text for the class-level controller
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset password'),
         content: TextField(
-          controller: _dialogCtrl,
+          controller: dialogCtrl, // Use the class-level controller
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(labelText: 'Email'),
         ),
@@ -66,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
           FilledButton(
             onPressed: () async {
-              final mail = _dialogCtrl.text.trim();
+              final mail = dialogCtrl.text.trim(); // Use the class-level controller
               if (mail.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Please enter your email')),
@@ -76,16 +78,16 @@ class _LoginPageState extends State<LoginPage> {
               Navigator.pop(context);
               setState(() => _loading = true);
               try {
-                await AuthService().sendPasswordResetEmail(mail);
+                await _auth.sendPasswordResetEmail(mail);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(this.context).showSnackBar(
                     const SnackBar(content: Text('Password reset email sent')),
                   );
                 }
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(
-                    context,
+                    this.context,
                   ).showSnackBar(SnackBar(content: Text(e.toString())));
                 }
               } finally {
@@ -104,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await _auth.signInWithGoogle();
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -117,12 +119,13 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  // ignore: unused_element
   Future<void> _facebookSignIn() async {
     setState(() => _loading = true);
     try {
       await _auth.signInWithFacebook();
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -132,6 +135,164 @@ class _LoginPageState extends State<LoginPage> {
       }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _phoneSignIn() async {
+    final phoneController = TextEditingController();
+    final otpController = TextEditingController();
+    String? verificationId;
+
+    // 1. Get Phone Number
+    final phone = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Phone Sign In'),
+        content: TextField(
+          controller: phoneController,
+          decoration: const InputDecoration(
+            labelText: 'Phone Number (e.g., +91...)',
+            prefixIcon: Icon(Icons.phone),
+          ),
+          keyboardType: TextInputType.phone,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              var text = phoneController.text.trim();
+              if (text.isNotEmpty) {
+                // Auto-append +91 if user types 10-digit number without code
+                if (!text.startsWith('+')) {
+                  if (RegExp(r'^[0-9]{10}$').hasMatch(text)) {
+                    text = '+91$text';
+                  } else {
+                    // If not 10 digits and no +, assume user forgot +, add it blindly or let firebase fail
+                    // But usually, adding + is safe if they forgot
+                    if (!text.startsWith('+')) text = '+$text';
+                  }
+                }
+                Navigator.pop(context, text);
+              }
+            },
+            child: const Text('Send Code'),
+          ),
+        ],
+      ),
+    );
+
+    if (phone == null || phone.isEmpty) return;
+
+    setState(() => _loading = true);
+
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phone,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Android only: Auto-resolution
+          await _auth.signInWithCredential(credential);
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          }
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          if (mounted) {
+            setState(() => _loading = false);
+            String message = 'Verification Failed: ${e.message}';
+            if (e.code == 'billing-not-enabled') {
+              message = 'Error: Firebase Blaze Plan required for SMS.\n'
+                  'Please enable billing in Firebase Console OR add this number as a "Test Number".';
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message),
+                duration: const Duration(seconds: 7),
+                action: SnackBarAction(
+                  label: 'OK',
+                  onPressed: () {},
+                  textColor: Colors.yellow,
+                ),
+              ),
+            );
+          }
+        },
+        codeSent: (String verId, int? resendToken) async {
+          verificationId = verId;
+          setState(() => _loading = false);
+
+          // 2. Get OTP
+          if (!mounted) return;
+          final otp = await showDialog<String>(
+            barrierDismissible: false,
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Enter OTP'),
+              content: TextField(
+                controller: otpController,
+                decoration: const InputDecoration(
+                  labelText: '6-digit Code',
+                  prefixIcon: Icon(Icons.password),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final text = otpController.text.trim();
+                    if (text.isNotEmpty) {
+                      Navigator.pop(context, text);
+                    }
+                  },
+                  child: const Text('Verify'),
+                ),
+              ],
+            ),
+          );
+
+          if (otp == null || otp.isEmpty) return;
+
+          setState(() => _loading = true);
+          try {
+            final credential = PhoneAuthProvider.credential(
+              verificationId: verificationId!,
+              smsCode: otp,
+            );
+            await _auth.signInWithCredential(credential);
+            if (mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Invalid OTP: $e')),
+              );
+            }
+          } finally {
+            if (mounted) setState(() => _loading = false);
+          }
+        },
+        codeAutoRetrievalTimeout: (String verId) {
+          verificationId = verId;
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+      setState(() => _loading = false);
     }
   }
 
@@ -161,6 +322,20 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Center(
+                  child: Container(
+                    height: 80,
+                    width: 80,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: AssetImage('assets/logo.jpg'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
                 Center(
                   child: Text(
                     'Sign in',
@@ -304,11 +479,11 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     // Email (not a social button but mimic the design)
-                    _SocialCircle(
+                    SocialCircle(
                       icon: Icons.email_outlined,
                       onTap: () => Navigator.pushNamed(context, '/signup'),
                     ),
-                    _SocialCircle(
+                    SocialCircle(
                       icon: Icons.apple,
                       backgroundColor: Colors.black,
                       iconColor: Colors.white,
@@ -321,40 +496,46 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                     ),
-                    _SocialCircle(
+                    SocialCircle(
                       icon: Icons.g_mobiledata,
                       backgroundColor: const Color(0xFFFFEFF2),
                       iconColor: const Color(0xFF9CD6B8),
                       onTap: _googleSignIn,
                     ),
+                    SocialCircle(
+                      icon: Icons.phone,
+                      backgroundColor: const Color(0xFFE3F2FD),
+                      iconColor: Colors.blue,
+                      onTap: _phoneSignIn,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 // Additional social row for Facebook and Microsoft
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _SocialCircle(
-                      onTap: _facebookSignIn,
-                      icon: Icons.facebook,
-                      backgroundColor: const Color.fromARGB(255, 171, 204, 253),
-                      // iconColor: const
-                      //   Color.fromRGBO(33, 150, 243, 1),
-                      // ),
-                    ),
-                    const SizedBox(width: 8),
-                    _SocialCircle(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Microsoft sign-in not configured'),
-                          ),
-                        );
-                      },
-                      icon: Icons.account_circle,
-                    ),
-                  ],
-                ),
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.center,
+                //   children: [
+                //     SocialCircle(
+                //       onTap: _facebookSignIn,
+                //       icon: Icons.facebook,
+                //       backgroundColor: const Color.fromARGB(255, 171, 204, 253),
+                //       // iconColor: const
+                //       //   Color.fromRGBO(33, 150, 243, 1),
+                //       // ),
+                //     ),
+                //     const SizedBox(width: 8),
+                //     SocialCircle(
+                //       onTap: () {
+                //         ScaffoldMessenger.of(context).showSnackBar(
+                //           const SnackBar(
+                //             content: Text('Microsoft sign-in not configured'),
+                //           ),
+                //         );
+                //       },
+                //       icon: Icons.account_circle,
+                //     ),
+                //   ],
+                // ),
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.center,
@@ -377,38 +558,4 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class _SocialCircle extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-  final Color backgroundColor;
-  final Color iconColor;
 
-  const _SocialCircle({
-    required this.icon,
-    this.onTap,
-    this.backgroundColor = Colors.white,
-    this.iconColor = Colors.black,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: const Color.fromRGBO(0, 0, 0, 0.04),
-              blurRadius: 8,
-            ),
-          ],
-        ),
-        child: Center(child: Icon(icon, color: iconColor, size: 28)),
-      ),
-    );
-  }
-}

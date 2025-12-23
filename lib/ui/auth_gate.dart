@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home_page.dart';
-import 'login_page.dart';
 import 'splash_screen.dart';
-import '../services/user_service.dart';
-import '../main.dart';
+
 
 /// Shows the HomePage when a user is signed in, otherwise shows LoginPage.
 ///
@@ -14,7 +12,7 @@ import '../main.dart';
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
-  static final _userService = UserService();
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(

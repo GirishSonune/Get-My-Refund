@@ -119,7 +119,7 @@ class MyDrawer extends StatelessWidget {
                       },
                       child: CircleAvatar(
                         radius: 36,
-                        backgroundImage: const AssetImage('avatar.png'),
+                      backgroundImage: const AssetImage('assets/avatar.png'),
                         child: user == null ? const Icon(Icons.person) : null,
                       ),
                     ),
@@ -219,53 +219,51 @@ class MyDrawer extends StatelessWidget {
                 text: "Sign Out",
                 icon: Icons.person_remove,
                 onTap: () async {
+                  final navigator = Navigator.of(context);
                   await AuthService().signOutAll();
-                  if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/splash',
-                      (_) => false,
-                    );
-                  }
+                  navigator.pushNamedAndRemoveUntil(
+                    '/splash',
+                    (_) => false,
+                  );
                 },
               ),
             ],
           ),
 
           // Animated Theme Switcher
-          Padding(
-            padding: const EdgeInsets.only(bottom: 25.0),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              transitionBuilder: (child, animation) =>
-                  ScaleTransition(scale: animation, child: child),
-              child: Consumer<ThemeProvider>(
-                key: ValueKey(Theme.of(context).brightness),
-                builder: (context, themeProvider, _) {
-                  final isDark =
-                      themeProvider.themeData.brightness == Brightness.dark;
-                  return ListTile(
-                    leading: Icon(
-                      isDark
-                          ? Icons.light_mode_outlined
-                          : Icons.dark_mode_outlined,
-                      color: Colors.grey,
-                    ),
-                    title: Text(
-                      isDark ? "Light Mode" : "Dark Mode",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 17,
-                      ),
-                    ),
-                    onTap: () {
-                      themeProvider.toggleTheme();
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.only(bottom: 25.0),
+          //   child: AnimatedSwitcher(
+          //     duration: const Duration(milliseconds: 400),
+          //     transitionBuilder: (child, animation) =>
+          //         ScaleTransition(scale: animation, child: child),
+          //     child: Consumer<ThemeProvider>(
+          //       key: ValueKey(Theme.of(context).brightness),
+          //       builder: (context, themeProvider, _) {
+          //         final isDark =
+          //             themeProvider.themeData.brightness == Brightness.dark;
+          //         return ListTile(
+          //           leading: Icon(
+          //             isDark
+          //                 ? Icons.light_mode_outlined
+          //                 : Icons.dark_mode_outlined,
+          //             color: Colors.grey,
+          //           ),
+          //           title: Text(
+          //             isDark ? "Light Mode" : "Dark Mode",
+          //             style: const TextStyle(
+          //               fontWeight: FontWeight.w400,
+          //               fontSize: 17,
+          //             ),
+          //           ),
+          //           onTap: () {
+          //             themeProvider.toggleTheme();
+          //           },
+          //         );
+          //       },
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

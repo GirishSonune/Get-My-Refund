@@ -108,11 +108,10 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.person_remove),
             title: const Text('Sign Out'),
-            onTap: () {
-              AuthService().signOut();
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
-              }
+            onTap: () async {
+              final navigator = Navigator.of(context);
+              await AuthService().signOut();
+              navigator.pushNamedAndRemoveUntil('/', (_) => false);
             },
           ),
           const Divider(),

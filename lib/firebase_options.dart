@@ -41,49 +41,51 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBFk0okMoBJo5v3dsckoB24pi4mUfE-OMU',
-    appId: '1:522043114149:web:7d71e146cb99398728834c',
-    messagingSenderId: '522043114149',
-    projectId: 'gmr-app-626ff',
-    authDomain: 'gmr-app-626ff.firebaseapp.com',
-    storageBucket: 'gmr-app-626ff.firebasestorage.app',
-    measurementId: 'G-NDPLSZTF4S',
+    apiKey: 'AIzaSyC4CssgKeRlgoPLwr_FbUnUUFKHwjy_L0w',
+    appId: '1:512066556824:web:2aa058dc790d5befc411ed',
+    messagingSenderId: '512066556824',
+    projectId: 'get-my-refund-5096f',
+    authDomain: 'get-my-refund-5096f.firebaseapp.com',
+    storageBucket: 'get-my-refund-5096f.firebasestorage.app',
+    measurementId: 'G-DQQMSXG5YW',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC--4vYq8gVZiSVHexLPLuGu7SYYzKhYfU',
-    appId: '1:522043114149:android:810e68fe6aeb928b28834c',
-    messagingSenderId: '522043114149',
-    projectId: 'gmr-app-626ff',
-    storageBucket: 'gmr-app-626ff.firebasestorage.app',
+    apiKey: 'AIzaSyDHLPAUiF0o_WarQzKk9j6W74z3-JfBvlc',
+    appId: '1:512066556824:android:69b108eb7d9e6fc7c411ed',
+    messagingSenderId: '512066556824',
+    projectId: 'get-my-refund-5096f',
+    storageBucket: 'get-my-refund-5096f.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA5q_0kIRdJfhnnjwBkV7wYYgnOODCDiYU',
-    appId: '1:522043114149:ios:c175b09e6d2a318728834c',
-    messagingSenderId: '522043114149',
-    projectId: 'gmr-app-626ff',
-    storageBucket: 'gmr-app-626ff.firebasestorage.app',
+    apiKey: 'AIzaSyA4bfC8kzed4kJ7MoBHisIT75bGjZzQP9M',
+    appId: '1:512066556824:ios:92ecad3c210506fcc411ed',
+    messagingSenderId: '512066556824',
+    projectId: 'get-my-refund-5096f',
+    storageBucket: 'get-my-refund-5096f.firebasestorage.app',
+    iosClientId: '512066556824-bojtvrk0cbgnqq0qjlpgdm8lhv7266u9.apps.googleusercontent.com',
     iosBundleId: 'com.example.getMyRefund',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyA5q_0kIRdJfhnnjwBkV7wYYgnOODCDiYU',
-    appId: '1:522043114149:ios:c175b09e6d2a318728834c',
-    messagingSenderId: '522043114149',
-    projectId: 'gmr-app-626ff',
-    storageBucket: 'gmr-app-626ff.firebasestorage.app',
+    apiKey: 'AIzaSyA4bfC8kzed4kJ7MoBHisIT75bGjZzQP9M',
+    appId: '1:512066556824:ios:92ecad3c210506fcc411ed',
+    messagingSenderId: '512066556824',
+    projectId: 'get-my-refund-5096f',
+    storageBucket: 'get-my-refund-5096f.firebasestorage.app',
+    iosClientId: '512066556824-bojtvrk0cbgnqq0qjlpgdm8lhv7266u9.apps.googleusercontent.com',
     iosBundleId: 'com.example.getMyRefund',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBFk0okMoBJo5v3dsckoB24pi4mUfE-OMU',
-    appId: '1:522043114149:web:60e6d8d587d9997228834c',
-    messagingSenderId: '522043114149',
-    projectId: 'gmr-app-626ff',
-    authDomain: 'gmr-app-626ff.firebaseapp.com',
-    storageBucket: 'gmr-app-626ff.firebasestorage.app',
-    measurementId: 'G-NQ3DF6FYKJ',
+    apiKey: 'AIzaSyC4CssgKeRlgoPLwr_FbUnUUFKHwjy_L0w',
+    appId: '1:512066556824:web:570d7cfe6c052c98c411ed',
+    messagingSenderId: '512066556824',
+    projectId: 'get-my-refund-5096f',
+    authDomain: 'get-my-refund-5096f.firebaseapp.com',
+    storageBucket: 'get-my-refund-5096f.firebasestorage.app',
+    measurementId: 'G-0LBLSW6WM6',
   );
 
 }

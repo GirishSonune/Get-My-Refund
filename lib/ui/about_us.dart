@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ionicons/ionicons.dart';
-import 'package:get_my_refund/ui/home_page.dart';
+
 
 class AboutUs extends StatefulWidget {
   const AboutUs({super.key});
@@ -139,7 +138,7 @@ class _AboutUsState extends State<AboutUs> {
               2,
             ),
           ),
-          SizedBox(height: 50),
+          const SizedBox(height: 50),
 
           const Center(
             child: Text(
@@ -155,7 +154,7 @@ class _AboutUsState extends State<AboutUs> {
               3,
             ),
           ),
-          SizedBox(height: 50),
+          const SizedBox(height: 50),
 
           const Center(
             child: Text(
@@ -171,7 +170,7 @@ class _AboutUsState extends State<AboutUs> {
               4,
             ),
           ),
-          SizedBox(height: 50),
+          const SizedBox(height: 50),
 
           const Center(
             child: Text(
@@ -187,7 +186,7 @@ class _AboutUsState extends State<AboutUs> {
               5,
             ),
           ),
-          SizedBox(height: 50),
+          const SizedBox(height: 50),
         ],
       ),
     );

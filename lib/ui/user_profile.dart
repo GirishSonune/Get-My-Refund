@@ -161,10 +161,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
 
     if (shouldLogout == true) {
+      final navigator = Navigator.of(context);
       await _auth.signOutAll();
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-      }
+      navigator.pushNamedAndRemoveUntil('/login', (_) => false);
     }
   }
 
@@ -217,7 +216,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withOpacity(0.7),
+            Theme.of(context).primaryColor.withValues(alpha: 0.7),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -237,7 +236,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -264,7 +263,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 8,
                       ),
                     ],
@@ -294,7 +293,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             _emailCtrl.text.trim(),
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
         ],
@@ -310,7 +309,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -326,7 +325,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(

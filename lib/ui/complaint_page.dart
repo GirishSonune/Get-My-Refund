@@ -139,7 +139,7 @@ Attachments: ${_files.map((f) => f.name).join(', ')}
                 gradient: LinearGradient(
                   colors: [
                     Theme.of(context).primaryColor,
-                    Theme.of(context).primaryColor.withOpacity(0.8),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.8),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -188,17 +188,9 @@ Attachments: ${_files.map((f) => f.name).join(', ')}
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.info, color: Colors.orange[800]),
+                              const Icon(Icons.info_outline, color: Colors.orange),
                               const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'आपको आपके पैसे मिलने के बाद आप GetMyRefund को १०% राशि का भुगतान करने के लिए सहमत हैं',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange[900],
-                                  ),
-                                ),
-                              ),
+                              const Text('Fee Notice', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
                             ],
                           ),
                           const SizedBox(height: 8),

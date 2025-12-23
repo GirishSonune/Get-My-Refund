@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import '../main.dart';
 import '../services/auth_service.dart';
-import '../services/user_service.dart';
 
-/// AppScaffold provides a consistent app bar with language toggle and
-/// a persistent floating action button for raising complaints.
 class AppScaffold extends StatelessWidget {
   final Widget body;
   final String title;
